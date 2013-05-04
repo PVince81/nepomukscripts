@@ -16,8 +16,9 @@ q = None
 
 class NepomukQuery(QtCore.QObject):
  
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, options={}):
         super(NepomukQuery, self).__init__(parent)
+        self.options = options
         self.count = 0
 
     def query_string(self, url):
@@ -38,7 +39,10 @@ class NepomukQuery(QtCore.QObject):
             return False
 
         comparison_term = Nepomuk.Query.ComparisonTerm(nepomuk_property, Nepomuk.Query.ResourceTerm(tag))
-        query = Nepomuk.Query.FileQuery(comparison_term)
+        if self.options.filesOnly:
+            query = Nepomuk.Query.FileQuery(comparison_term)
+        else:
+            query = Nepomuk.Query.Query(comparison_term)
 
         search_url = query.toSearchUrl()
 
@@ -51,7 +55,10 @@ class NepomukQuery(QtCore.QObject):
     def search_slot(self, job, data):
         global app
         for item in data:
-            print item.stringValue(KIO.UDSEntry.UDS_LOCAL_PATH)
+            print item.stringValue(KIO.UDSEntry.UDS_URL),
+            print "\t",
+            print (item.stringValue(KIO.UDSEntry.UDS_LOCAL_PATH).__str__() or item.stringValue(KIO.UDSEntry.UDS_NAME).__str__())
+
             self.count = self.count + 1
 
     def result(self, job):
@@ -74,7 +81,10 @@ def main():
                         default=False, help='comma separated list of tags to search for')
     parser.add_option('-q', '--query', action="store",
                         dest='useQuery',
-                        default=False, help='use query')
+                        default=False, help='specify Nepomuk query')
+    parser.add_option('-f', '--files', action="store_true",
+                        dest='filesOnly',
+                        default=False, help='limit results to files')
     (args, rest) = parser.parse_args()
 
     result = Nepomuk.ResourceManager.instance().init()
@@ -88,11 +98,11 @@ def main():
     signal.signal(signal.SIGINT, term_handler)
 
     if args.useQuery:
-        q = NepomukQuery()
+        q = NepomukQuery(None, args)
         job = q.query_string(args.useQuery)
         
     elif args.useTags:
-        q = NepomukQuery()
+        q = NepomukQuery(None, args)
         job = q.query_tag(args.useTags.split(','))
 
     if job:
