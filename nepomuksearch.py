@@ -55,8 +55,9 @@ class NepomukQuery(QtCore.QObject):
     def search_slot(self, job, data):
         global app
         for item in data:
-            print item.stringValue(KIO.UDSEntry.UDS_URL),
-            print "\t",
+            if self.options.showUrls:
+                print item.stringValue(KIO.UDSEntry.UDS_URL),
+                print "\t",
             print (item.stringValue(KIO.UDSEntry.UDS_LOCAL_PATH).__str__() or item.stringValue(KIO.UDSEntry.UDS_NAME).__str__())
 
             self.count = self.count + 1
@@ -85,6 +86,9 @@ def main():
     parser.add_option('-f', '--files', action="store_true",
                         dest='filesOnly',
                         default=False, help='limit results to files')
+    parser.add_option('-u', '--urls', action="store_true",
+                        dest='showUrls',
+                        default=False, help='show resource URLs')
     (args, rest) = parser.parse_args()
 
     result = Nepomuk.ResourceManager.instance().init()
